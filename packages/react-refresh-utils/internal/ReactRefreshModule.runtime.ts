@@ -1,11 +1,11 @@
-import { RefreshRuntimeGlobals } from '../runtime'
+import type { RefreshRuntimeGlobals } from '../runtime'
 
 declare const self: Window & RefreshRuntimeGlobals
 
 type Dictionary = { [key: string]: unknown }
-declare const module: {
+declare const __webpack_module__: {
   id: string
-  __proto__: { exports: unknown }
+  exports: unknown
   hot: {
     accept: () => void
     dispose: (onDispose: (data: Dictionary) => void) => void
@@ -27,32 +27,37 @@ export default function () {
       // AMP / No-JS mode does not inject these helpers:
       '$RefreshHelpers$' in self
     ) {
-      var currentExports = module.__proto__.exports
-      var prevExports = module.hot.data?.prevExports ?? null
+      // @ts-ignore __webpack_module__ is global
+      var currentExports = __webpack_module__.exports
+      // @ts-ignore __webpack_module__ is global
+      var prevSignature: unknown[] | null =
+        __webpack_module__.hot.data?.prevSignature ?? null
 
       // This cannot happen in MainTemplate because the exports mismatch between
       // templating and execution.
       self.$RefreshHelpers$.registerExportsForReactRefresh(
         currentExports,
-        module.id
+        __webpack_module__.id
       )
 
       // A module can be accepted automatically based on its exports, e.g. when
       // it is a Refresh Boundary.
       if (self.$RefreshHelpers$.isReactRefreshBoundary(currentExports)) {
-        // Save the previous exports on update so we can compare the boundary
-        // signatures.
-        module.hot.dispose(function (data) {
-          data.prevExports = currentExports
+        // Save the previous exports signature on update so we can compare the boundary
+        // signatures. We avoid saving exports themselves since it causes memory leaks (https://github.com/vercel/next.js/pull/53797)
+        __webpack_module__.hot.dispose(function (data) {
+          data.prevSignature =
+            self.$RefreshHelpers$.getRefreshBoundarySignature(currentExports)
         })
         // Unconditionally accept an update to this module, we'll check if it's
         // still a Refresh Boundary later.
-        module.hot.accept()
+        // @ts-ignore importMeta is replaced in the loader
+        global.importMeta.webpackHot.accept()
 
         // This field is set when the previous version of this module was a
         // Refresh Boundary, letting us know we need to check for invalidation or
         // enqueue an update.
-        if (prevExports !== null) {
+        if (prevSignature !== null) {
           // A boundary can become ineligible if its exports are incompatible
           // with the previous exports.
           //
@@ -62,11 +67,11 @@ export default function () {
           // function, we want to invalidate the boundary.
           if (
             self.$RefreshHelpers$.shouldInvalidateReactRefreshBoundary(
-              prevExports,
-              currentExports
+              prevSignature,
+              self.$RefreshHelpers$.getRefreshBoundarySignature(currentExports)
             )
           ) {
-            module.hot.invalidate()
+            __webpack_module__.hot.invalidate()
           } else {
             self.$RefreshHelpers$.scheduleUpdate()
           }
@@ -76,9 +81,9 @@ export default function () {
         // new exports made it ineligible for being a boundary.
         // We only care about the case when we were _previously_ a boundary,
         // because we already accepted this update (accidental side effect).
-        var isNoLongerABoundary = prevExports !== null
+        var isNoLongerABoundary = prevSignature !== null
         if (isNoLongerABoundary) {
-          module.hot.invalidate()
+          __webpack_module__.hot.invalidate()
         }
       }
     }

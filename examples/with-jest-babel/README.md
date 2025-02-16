@@ -6,14 +6,18 @@ This includes Next.js' built-in support for Global CSS, CSS Modules and TypeScri
 
 ## How to Use
 
-Quickly get started using [Create Next App](https://github.com/vercel/next.js/tree/canary/packages/create-next-app#readme)!
-
-In your terminal, run the following command:
+Execute [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) with [npm](https://docs.npmjs.com/cli/init), [Yarn](https://yarnpkg.com/lang/en/docs/cli/create/), or [pnpm](https://pnpm.io) to bootstrap the example:
 
 ```bash
-npx create-next-app --example with-jest with-jest-app
-# or
-yarn create next-app --example with-jest with-jest-app
+npx create-next-app --example with-jest-babel with-jest-babel-app
+```
+
+```bash
+yarn create next-app --example with-jest-babel with-jest-babel-app
+```
+
+```bash
+pnpm create next-app --example with-jest-babel with-jest-babel-app
 ```
 
 ## Run Jest Tests
@@ -21,3 +25,13 @@ yarn create next-app --example with-jest with-jest-app
 ```bash
 npm test
 ```
+
+```bash
+yarn test
+```
+
+```bash
+pnpm test
+```
+
+Deploy it to the cloud with [Vercel](https://vercel.com/new?utm_source=github&utm_medium=readme&utm_campaign=next-example) ([Documentation](https://nextjs.org/docs/deployment)).
