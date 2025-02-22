@@ -34,20 +34,19 @@ describe('config', () => {
 
   it('Should pass the customConfig correctly', async () => {
     const config = await loadConfig(PHASE_DEVELOPMENT_SERVER, null, {
-      customConfig: true,
+      customConfig: {
+        customConfigKey: 'customConfigValue',
+      },
     })
-    expect(config.customConfig).toBe(true)
-  })
-
-  it('Should not pass the customConfig when it is null', async () => {
-    const config = await loadConfig(PHASE_DEVELOPMENT_SERVER, null, null)
-    expect(config.webpack).toBe(null)
+    expect(config.customConfigKey).toBe('customConfigValue')
   })
 
   it('Should assign object defaults deeply to customConfig', async () => {
     const config = await loadConfig(PHASE_DEVELOPMENT_SERVER, null, {
-      customConfig: true,
-      onDemandEntries: { custom: true },
+      customConfig: {
+        customConfig: true,
+        onDemandEntries: { custom: true },
+      },
     })
     expect(config.customConfig).toBe(true)
     expect(config.onDemandEntries.maxInactiveAge).toBeDefined()
@@ -55,7 +54,9 @@ describe('config', () => {
 
   it('Should allow setting objects which do not have defaults', async () => {
     const config = await loadConfig(PHASE_DEVELOPMENT_SERVER, null, {
-      bogusSetting: { custom: true },
+      customConfig: {
+        bogusSetting: { custom: true },
+      },
     })
     expect(config.bogusSetting).toBeDefined()
     expect(config.bogusSetting.custom).toBe(true)
@@ -63,7 +64,9 @@ describe('config', () => {
 
   it('Should override defaults for arrays from user arrays', async () => {
     const config = await loadConfig(PHASE_DEVELOPMENT_SERVER, null, {
-      pageExtensions: ['.bogus'],
+      customConfig: {
+        pageExtensions: ['.bogus'],
+      },
     })
     expect(config.pageExtensions).toEqual(['.bogus'])
   })
@@ -74,23 +77,15 @@ describe('config', () => {
         PHASE_DEVELOPMENT_SERVER,
         join(__dirname, '_resolvedata', 'invalid-target')
       )
-    }).rejects.toThrow(/Specified target is invalid/)
+    }).rejects.toThrow(/The "target" property is no longer supported/)
   })
 
-  it('Should pass when a valid target is provided', async () => {
-    const config = await loadConfig(
-      PHASE_DEVELOPMENT_SERVER,
-      join(__dirname, '_resolvedata', 'valid-target')
-    )
-    expect(config.target).toBe('serverless')
-  })
-
-  it('Should throw an error when next.config.js is not present', async () => {
+  it('Should throw an error when next.config.(js | mjs | ts) is not present', async () => {
     await expect(
       async () =>
         await loadConfig(
           PHASE_DEVELOPMENT_SERVER,
-          join(__dirname, '_resolvedata', 'typescript-config')
+          join(__dirname, '_resolvedata', 'missing-config')
         )
     ).rejects.toThrow(
       /Configuring Next.js via .+ is not supported. Please replace the file with 'next.config.js'/
@@ -105,17 +100,11 @@ describe('config', () => {
     expect(config.__test__ext).toBe('js')
   })
 
-  it('Should ignore configs set to `undefined`', async () => {
-    const config = await loadConfig(PHASE_DEVELOPMENT_SERVER, null, {
-      target: undefined,
-    })
-    expect(config.target).toBe('server')
-  })
-
-  it('Should ignore configs set to `null`', async () => {
-    const config = await loadConfig(PHASE_DEVELOPMENT_SERVER, null, {
-      target: null,
-    })
-    expect(config.target).toBe('server')
+  it('Should not throw an error when next.config.ts is present', async () => {
+    const config = await loadConfig(
+      PHASE_DEVELOPMENT_SERVER,
+      join(__dirname, '_resolvedata', 'typescript-config')
+    )
+    expect(config.__test__ext).toBe('ts')
   })
 })

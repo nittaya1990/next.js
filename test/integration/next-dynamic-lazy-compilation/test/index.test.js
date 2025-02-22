@@ -29,7 +29,9 @@ function runTests() {
     const browser = await webdriver(appPort, '/')
     const text = await browser.elementByCss('#before-hydration').text()
 
-    expect(text).toBe('Index<!-- -->1<!-- -->2<!-- -->3<!-- -->4<!-- -->4')
+    expect(text).toMatch(
+      /^Index<!--\/?(\$|\s)-->1(<!--\/?(\$|\s)-->)+2(<!--\/?(\$|\s)-->)+3(<!--\/?(\$|\s)-->)+4(<!--\/?(\$|\s)-->)+4$/
+    )
     expect(await browser.eval('window.caughtErrors')).toBe('')
   })
 
@@ -37,37 +39,48 @@ function runTests() {
     const browser = await webdriver(appPort, '/')
     const text = await browser.elementByCss('#first-render').text()
 
-    expect(text).toBe('Index<!-- -->1<!-- -->2<!-- -->3<!-- -->4<!-- -->4')
+    expect(text).toMatch(
+      /^Index<!--\/?(\$|\s)-->1(<!--\/?(\$|\s)-->)+2(<!--\/?(\$|\s)-->)+3(<!--\/?(\$|\s)-->)+4(<!--\/?(\$|\s)-->)+4$/
+    )
     expect(await browser.eval('window.caughtErrors')).toBe('')
   })
 }
 
-describe('next/dynamic', () => {
-  describe('dev mode', () => {
-    beforeAll(async () => {
-      appPort = await findPort()
-      app = await launchApp(appDir, appPort)
-    })
-    afterAll(() => killApp(app))
+// This test is not needed for Turbopack as it relies on an experimental webpack feature.
+;(process.env.TURBOPACK ? describe.skip : describe)(
+  'next/dynamic lazy compilation',
+  () => {
+    ;(process.env.TURBOPACK_BUILD ? describe.skip : describe)(
+      'development mode',
+      () => {
+        beforeAll(async () => {
+          appPort = await findPort()
+          app = await launchApp(appDir, appPort)
+        })
+        afterAll(() => killApp(app))
 
-    runTests(true)
-  })
+        runTests(true)
+      }
+    )
+    ;(process.env.TURBOPACK_DEV ? describe.skip : describe)(
+      'production mode',
+      () => {
+        beforeAll(async () => {
+          await runNextCommand(['build', appDir])
 
-  describe('production mode', () => {
-    beforeAll(async () => {
-      await runNextCommand(['build', appDir])
+          app = nextServer({
+            dir: appDir,
+            dev: false,
+            quiet: true,
+          })
 
-      app = nextServer({
-        dir: appDir,
-        dev: false,
-        quiet: true,
-      })
+          server = await startApp(app)
+          appPort = server.address().port
+        })
+        afterAll(() => stopApp(server))
 
-      server = await startApp(app)
-      appPort = server.address().port
-    })
-    afterAll(() => stopApp(server))
-
-    runTests()
-  })
-})
+        runTests()
+      }
+    )
+  }
+)
