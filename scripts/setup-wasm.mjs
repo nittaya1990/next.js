@@ -1,21 +1,32 @@
 import path from 'path'
-import { readFile, writeFile } from 'fs/promises'
-import { copy } from 'fs-extra'
+import fs from 'fs'
 ;(async function () {
-  let wasmDir = path.join(process.cwd(), 'packages/next-swc/crates/wasm')
-  let wasmTarget = 'nodejs'
-  let wasmPkg = JSON.parse(
-    await readFile(path.join(wasmDir, `pkg-${wasmTarget}/package.json`))
-  )
-  wasmPkg.name = `@next/swc-wasm-${wasmTarget}`
+  try {
+    let wasmDir = path.join(process.cwd(), 'crates/wasm')
+    let wasmTarget = 'nodejs'
 
-  await writeFile(
-    path.join(wasmDir, `pkg-${wasmTarget}/package.json`),
-    JSON.stringify(wasmPkg, null, 2)
-  )
+    // CI restores artifact at pkg-${wasmTarget}
+    // This only runs locally
+    let folderName = fs.existsSync(path.join(wasmDir, 'pkg'))
+      ? 'pkg'
+      : `pkg-${wasmTarget}`
 
-  await copy(
-    path.join(wasmDir, `pkg-${wasmTarget}`),
-    path.join(process.cwd(), `node_modules/@next/swc-wasm-${wasmTarget}`)
-  )
+    let wasmPkg = JSON.parse(
+      fs.readFileSync(path.join(wasmDir, `${folderName}/package.json`))
+    )
+    wasmPkg.name = `@next/swc-wasm-${wasmTarget}`
+
+    fs.writeFileSync(
+      path.join(wasmDir, `${folderName}/package.json`),
+      JSON.stringify(wasmPkg, null, 2)
+    )
+
+    fs.cpSync(
+      path.join(wasmDir, folderName),
+      path.join(process.cwd(), `node_modules/@next/swc-wasm-${wasmTarget}`),
+      { force: true, recursive: true }
+    )
+  } catch (e) {
+    console.error(e)
+  }
 })()
